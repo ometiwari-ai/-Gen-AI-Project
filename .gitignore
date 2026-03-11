@@ -1,3 +1,18 @@
 /node_modules
 /dist
 /.env
+
+# Environment files
+.env.*
+!.env.example
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local development artifacts
+.DS_Store
+Thumbs.db
+.vscode/
