@@ -1,7 +1,8 @@
 const userModel = require("../models/user.model")
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken");
-const { useReducer } = require("react");
+
+const JWT_SECRET = process.env.JWT_SECRET || process.env.JWT_SECRET_KEY;
 
 /**
  * @route POST /api/auth/register
@@ -9,21 +10,22 @@ const { useReducer } = require("react");
  * @access Public
  */
 async function registerUserController(req, res) {
-    const { username, email, password } = req.body; // destructuring
 
-    if (!username || !email || !password) {  // to check if any missing field
+    const { username, email, password } = req.body
+
+    if (!username || !email || !password) {
         return res.status(400).json({
-            message: "All fields are required"
+            message: "Please provide username, email and password"
         })
     }
 
-    const isUserAlreadyExist = await userModel.findOne({
-        $or: [{ username }, { email }]  // or operatore,  used to check if any field already exist
+    const isUserAlreadyExists = await userModel.findOne({
+        $or: [ { username }, { email } ]
     })
 
-    if (isUserAlreadyExist) {
+    if (isUserAlreadyExists) {
         return res.status(400).json({
-            message: "User already exist with this username or email"
+            message: "Account already exists with this email address or username"
         })
     }
 
@@ -37,17 +39,22 @@ async function registerUserController(req, res) {
 
     const token = jwt.sign(
         { id: user._id, username: user.username },
-        process.env.JWT_SECRET_KEY,
-        { expiresIn: "2d" }
+        process.env.JWT_SECRET,
+        { expiresIn: "1d" }
     )
-    res.send(201).json({
-        msg: " User registered Succesfully",
+
+    res.cookie("token", token)
+
+
+    res.status(201).json({
+        message: "User registered successfully",
         user: {
             id: user._id,
             username: user.username,
             email: user.email
         }
     })
+
 }
 
 /**
@@ -56,6 +63,12 @@ async function registerUserController(req, res) {
  * @access Public
  */
 async function loginUserController(req, res) {
+    if (!JWT_SECRET) {
+        return res.status(500).json({
+            message: "JWT secret is not configured"
+        })
+    }
+
 
     const { email, password } = req.body
 
@@ -77,7 +90,7 @@ async function loginUserController(req, res) {
 
     const token = jwt.sign(
         { id: user._id, username: user.username },
-        process.env.JWT_SECRET,
+        JWT_SECRET,
         { expiresIn: "1d" }
     )
 
@@ -93,4 +106,7 @@ async function loginUserController(req, res) {
 }
 
 
-module.exports = { registerUserController }
+module.exports = { 
+    registerUserController,
+    loginUserController
+ }
